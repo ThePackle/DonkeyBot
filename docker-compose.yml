@@ -1,3 +1,9 @@
+volumes:
+    dblogs:
+      name: donkeybot_logs
+    dbjson:
+      name: donkeybot_json
+
 services:
   donkeybot:
     container_name: donkeybot
@@ -9,8 +15,8 @@ services:
       - .env
     volumes:
       - .:/app:rw
-      - ./logs:/app/logs:rw
-      - ./json:/app/json:rw
+      - dblogs:/app/logs:rw
+      - dbjson:/app/json:rw
     networks:
       - donkeybot
 
