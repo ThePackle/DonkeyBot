@@ -1,0 +1,19 @@
+services:
+  donkeybot:
+    container_name: donkeybot
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - .:/app:rw
+      - ./logs:/app/logs:rw
+      - ./json:/app/json:rw
+    networks:
+      - donkeybot
+
+networks:
+  donkeybot:
+    driver: bridge

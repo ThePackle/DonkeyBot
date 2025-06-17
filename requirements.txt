@@ -1,0 +1,4 @@
+discord.py==2.5.*
+python-dotenv==1.1.*
+twitchAPI==4.5.*
+pillow>=11.2.0
