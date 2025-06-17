@@ -1,0 +1,16 @@
+{
+    "primary": {
+        "server": 0,
+        "stream": {
+            "main": 0,
+            "thread": 0
+        }
+    },
+    "dev": {
+        "server": 0,
+        "stream": {
+            "main": 0,
+            "thread": 0
+        }
+    }
+}
