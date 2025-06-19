@@ -1,4 +1,3 @@
-import asyncio
 import time
 from typing import TYPE_CHECKING
 
@@ -38,7 +37,6 @@ class StreamingCog(
         self.bot = bot
         self.stream_role: int = int(self.bot.roles["admin"]["stream"])
         self.live: dict[dict, str] = LIVE_LIST
-        self.task_lock = asyncio.Lock()
 
     async def cog_load(self) -> None:
         self.stream_channel = await self.bot.fetch_channel(STREAM_CHANNEL)
@@ -55,11 +53,9 @@ class StreamingCog(
     @tasks.loop(minutes=1)
     async def stream_loop(self) -> None:
         """Checks livestream status of players every minute."""
-        async with self.task_lock:
-            stream = await first(self.ttv_client.get_streams(user_login="ThreeAlpaca"))
-            if not stream:
-                return
+        stream = await first(self.ttv_client.get_streams(user_login="ThreeAlpaca"))
 
+        if stream:
             user = await first(self.ttv_client.get_users(logins="ThreeAlpaca"))
             try:
                 self.live[stream.user_name]
@@ -96,48 +92,14 @@ class StreamingCog(
                     }
                 )
 
-            remove_stream = []
-            for user, messages in self.live.items():
-
-                stream = await first(self.ttv_client.get_streams(user_login=user))
-
-                if stream is None:
-                    if messages["check"] >= 5:
-                        remove_stream.append(user)
-                    else:
-                        check = messages["check"] + 1
-                        self.live[user].update({"check": check})
-                else:
-                    e_thumbnail = (
-                        messages["thumbnail"] + "?rand=" + str(int(time.time()))
-                    )
-
-                    embed = EmbedCreator.twitch_embed(
-                        title=stream.title,
-                        stream_name=user,
-                        stream_game=stream.game_name,
-                        viewer_count=stream.viewer_count,
-                        twitch_pfp=messages["pfp"],
-                        thumbnail=e_thumbnail,
-                    )
-
-                    try:
-                        embed_stream = await self.stream_channel.fetch_message(
-                            messages["embed"]
-                        )
-
-                        await embed_stream.edit(embed=embed)
-                    except discord.errors.NotFound:
-                        new_embed = await self.stream_channel.send(embed=embed)
-                        self.live[user].update({"embed": new_embed.id})
-
-                    self.live[user].update({"check": 0})
-
-            if len(remove_stream) > 0:
-                for stream in remove_stream:
+        remove_stream = []
+        for user, messages in self.live.items():
+            if stream is None:
+                print(messages["check"])
+                if messages["check"] >= 5:
                     archive = await first(
                         self.ttv_client.get_videos(
-                            user_id=self.live[stream]["user_id"],
+                            user_id=messages["user_id"],
                             video_type=VideoType.ARCHIVE,
                             first=1,
                             sort=SortMethod.TIME,
@@ -146,22 +108,50 @@ class StreamingCog(
 
                     await self.stream_thread.send(
                         embed=EmbedCreator.twitch_offline_embed(
-                            stream_name=stream,
-                            stream_game=self.live[stream]["game"],
-                            twitch_pfp=self.live[stream]["pfp"],
+                            stream_name=user,
+                            stream_game=messages["game"],
+                            twitch_pfp=messages["pfp"],
                             archive_video=archive.url,
                         )
                     )
 
                     remove_embed = await self.stream_channel.fetch_message(
-                        self.live[stream]["embed"]
+                        messages["embed"]
                     )
                     remove_role = await self.stream_channel.fetch_message(
-                        self.live[stream]["role"]
+                        messages["role"]
                     )
 
                     await remove_embed.delete()
                     await remove_role.delete()
-                    self.live.pop(stream, None)
+                else:
+                    check = messages["check"] + 1
+                    self.live[user].update({"check": check})
+            else:
+                e_thumbnail = messages["thumbnail"] + "?rand=" + str(int(time.time()))
 
-            JsonHelper.save_json(self.live, "json/live.json")
+                embed = EmbedCreator.twitch_embed(
+                    title=stream.title,
+                    stream_name=user,
+                    stream_game=stream.game_name,
+                    viewer_count=stream.viewer_count,
+                    twitch_pfp=messages["pfp"],
+                    thumbnail=e_thumbnail,
+                )
+
+                try:
+                    embed_stream = await self.stream_channel.fetch_message(
+                        messages["embed"]
+                    )
+
+                    await embed_stream.edit(embed=embed)
+                except discord.errors.NotFound:
+                    new_embed = await self.stream_channel.send(embed=embed)
+                    self.live[user].update({"embed": new_embed.id})
+
+                self.live[user].update({"check": 0})
+
+        for user in remove_stream:
+            self.live.pop(user, None)
+
+        JsonHelper.save_json(self.live, "json/live.json")

@@ -4,10 +4,17 @@ import time
 from typing import TypeVar
 
 import discord
+import sentry_sdk
 from discord import Intents
 from discord.ext import commands
 
-from donkeybot.helpers.config_helper import DISCORD_KEY, ENV, GUILD_ID, ROLES_LIST
+from donkeybot.helpers.config_helper import (
+    DISCORD_KEY,
+    ENV,
+    GUILD_ID,
+    ROLES_LIST,
+    SENTRY_SDN,
+)
 from donkeybot.helpers.embed_helper import EmbedCreator
 from donkeybot.helpers.setup_json import setup_json
 from donkeybot.helpers.setup_logging import setup_logging
@@ -36,6 +43,15 @@ class DonkeyBot(commands.Bot):
 
         self.roles: dict[dict, str] = ROLES_LIST[ENV]
         self._log.info("Bot successfully started...")
+
+        if ENV == "primary":
+            sentry_sdk.init(
+                dsn=SENTRY_SDN,
+                send_default_pii=True,
+                traces_sample_rate=1.0,
+            )
+        else:
+            self._log.info("Currently in dev mode; skipping Sentry...")
 
         super().__init__(
             command_prefix="/", intents=intent, case_insensitive=True, **kwargs

@@ -19,6 +19,8 @@ GUILD_ID: int = int(CHANNELS_LIST[ENV]["server"])
 STREAM_CHANNEL: int = int(CHANNELS_LIST[ENV]["stream"]["main"])
 STREAM_OFF_THREAD: int = int(CHANNELS_LIST[ENV]["stream"]["thread"])
 
+SENTRY_SDN: str = os.getenv("SENTRY_SDN")
+
 TTV_TOKEN: str = os.getenv("TWITCH_TOKEN")
 TTV_ID: str = os.getenv("TWITCH_ID")
 
