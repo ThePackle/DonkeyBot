@@ -25,7 +25,9 @@ class ErrorHandler(Cog, name="ErrorHandler", description="Manages DonkeyBot's er
         self.bot = bot
 
     async def on_app_command_error(
-        self, interaction: Interaction, error: app_commands.AppCommandError
+        self,
+        interaction: Interaction,
+        error: app_commands.AppCommandError,
     ) -> None:
         if isinstance(error, app_commands.CheckFailure):
             await interaction.response.send_message(
