@@ -126,6 +126,8 @@ class StreamingCog(
 
                         await remove_embed.delete()
                         await remove_role.delete()
+
+                        remove_stream.append(user)
                     else:
                         check = messages["check"] + 1
                         self.live[user].update({"check": check})
