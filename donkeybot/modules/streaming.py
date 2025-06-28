@@ -97,7 +97,6 @@ class StreamingCog(
             remove_stream = []
             for user, messages in self.live.items():
                 if stream is None:
-                    print(messages["check"])
                     if messages["check"] >= 5:
                         archive = await first(
                             self.ttv_client.get_videos(
