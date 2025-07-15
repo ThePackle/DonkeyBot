@@ -14,6 +14,7 @@ from donkeybot.helpers.config_helper import (
     STREAM_CHANNEL,
     STREAM_OFF_THREAD,
     TTV_ID,
+    TTV_TIMEOUT,
     TTV_TOKEN,
 )
 from donkeybot.helpers.embed_helper import EmbedCreator
@@ -97,7 +98,7 @@ class StreamingCog(
             remove_stream = []
             for user, messages in self.live.items():
                 if stream is None:
-                    if messages["check"] >= 5:
+                    if messages["check"] >= TTV_TIMEOUT:
                         archive = await first(
                             self.ttv_client.get_videos(
                                 user_id=messages["user_id"],

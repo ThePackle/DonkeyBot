@@ -23,6 +23,7 @@ SENTRY_SDN: str = os.getenv("SENTRY_SDN")
 
 TTV_TOKEN: str = os.getenv("TWITCH_TOKEN")
 TTV_ID: str = os.getenv("TWITCH_ID")
+TTV_TIMEOUT: int = os.getenv("TTV_TIMEOUT")
 
 BOT: str = os.getenv("BOT_NAME")
 
