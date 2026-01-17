@@ -1,9 +1,8 @@
 import time
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import discord
 import sentry_sdk
-from discord import TextChannel
 from discord.ext import tasks
 from discord.ext.commands import Cog
 from twitchAPI.helper import first
@@ -25,32 +24,25 @@ if TYPE_CHECKING:
     from donkeybot.main import DonkeyBot
 
 
-async def setup(bot: "DonkeyBot") -> None:
+async def setup(bot: "DonkeyBot"):
     await bot.add_cog(StreamingCog(bot))
 
 
-async def teardown(bot: "DonkeyBot") -> None:
-    await bot.remove_cog("Streaming")
+async def teardown(bot: "DonkeyBot"):
+    await bot.remove_cog(name="Streaming")
 
 
 class StreamingCog(
     Cog, name="Streaming", description="Manages DonkeyBot's stream checks"
 ):
-    stream_channel: TextChannel
-    stream_thread: TextChannel
-
     def __init__(self, bot: "DonkeyBot") -> None:
         self.bot = bot
         self.stream_role: int = int(self.bot.roles["admin"]["stream"])
-        self.live: dict[str, dict[str, Any]] = LIVE_LIST
+        self.live: dict[dict, str] = LIVE_LIST
 
     async def cog_load(self) -> None:
-        channel = await self.bot.fetch_channel(STREAM_CHANNEL)
-        thread = await self.bot.fetch_channel(STREAM_OFF_THREAD)
-        if not isinstance(channel, TextChannel) or not isinstance(thread, TextChannel):
-            raise ValueError("Stream channels must be TextChannels")
-        self.stream_channel = channel
-        self.stream_thread = thread
+        self.stream_channel = await self.bot.fetch_channel(STREAM_CHANNEL)
+        self.stream_thread = await self.bot.fetch_channel(STREAM_OFF_THREAD)
         self.ttv_client = await Twitch(app_id=TTV_ID, app_secret=TTV_TOKEN)
 
         self.stream_loop.start()
