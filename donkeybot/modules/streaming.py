@@ -45,12 +45,16 @@ class StreamingCog(
         self.live: dict[str, dict[str, Any]] = LIVE_LIST
 
     async def cog_load(self) -> None:
-        channel = await self.bot.fetch_channel(STREAM_CHANNEL)
-        thread = await self.bot.fetch_channel(STREAM_OFF_THREAD)
-        if not isinstance(channel, TextChannel) or not isinstance(thread, TextChannel):
-            raise ValueError("Stream channels must be TextChannels")
-        self.stream_channel = channel
-        self.stream_thread = thread
+        stream_ch = await self.bot.fetch_channel(STREAM_CHANNEL)
+        thread_ch = await self.bot.fetch_channel(STREAM_OFF_THREAD)
+
+        if not isinstance(stream_ch, discord.TextChannel):
+            raise RuntimeError("STREAM_CHANNEL is not a TextChannel")
+        if not isinstance(thread_ch, (discord.TextChannel, discord.Thread)):
+            raise RuntimeError("STREAM_OFF_THREAD is not a TextChannel or Thread")
+
+        self.stream_channel = stream_ch
+        self.stream_thread = thread_ch
         self.ttv_client = await Twitch(app_id=TTV_ID, app_secret=TTV_TOKEN)
 
         self.stream_loop.start()
