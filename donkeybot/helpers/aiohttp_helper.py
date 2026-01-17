@@ -34,7 +34,11 @@ class AIOHTTPHelper:
         if cls._session is None or cls._session.closed:
             await cls.init_session()
 
-        async with cls._session.get(url, headers=headers, timeout=timeout) as response:
+        client_timeout = aiohttp.ClientTimeout(total=timeout)
+        assert cls._session is not None
+        async with cls._session.get(
+            url, headers=headers, timeout=client_timeout
+        ) as response:
             status = response.status
             data = None
             if response.content_type == "application/json":
@@ -50,9 +54,10 @@ class AIOHTTPHelper:
         data: dict[str, Any] | None,
         timeout: int = 10,
     ) -> AIOHTTPResponse:
+        client_timeout = aiohttp.ClientTimeout(total=timeout)
         async with aiohttp.ClientSession() as session:
             async with session.post(
-                url, json=data, headers=headers, timeout=timeout
+                url, json=data, headers=headers, timeout=client_timeout
             ) as response:
                 status = response.status
                 response_data = None
@@ -69,9 +74,10 @@ class AIOHTTPHelper:
         data: dict[str, Any] | None,
         timeout: int = 10,
     ) -> AIOHTTPResponse:
+        client_timeout = aiohttp.ClientTimeout(total=timeout)
         async with aiohttp.ClientSession() as session:
             async with session.put(
-                url, json=data, headers=headers, timeout=timeout
+                url, json=data, headers=headers, timeout=client_timeout
             ) as response:
                 status = response.status
                 response_data = None

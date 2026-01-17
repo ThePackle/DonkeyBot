@@ -1,7 +1,7 @@
 import logging
 import os
 import time
-from typing import TypeVar
+from typing import Any
 
 import discord
 import sentry_sdk
@@ -18,8 +18,6 @@ from donkeybot.helpers.config_helper import (
 from donkeybot.helpers.embed_helper import EmbedCreator
 from donkeybot.helpers.setup_json import setup_json
 from donkeybot.helpers.setup_logging import setup_logging
-
-T = TypeVar("T")
 
 
 class BotContext(EmbedCreator, commands.Context):
@@ -41,7 +39,7 @@ class DonkeyBot(commands.Bot):
         self.case_insensitive = True
         self.start_time = time.time()
 
-        self.roles: dict[dict, str] = ROLES_LIST[ENV]
+        self.roles: dict[str, dict[str, Any]] = ROLES_LIST[ENV]
         self._log.info("Bot successfully started...")
 
         if ENV == "primary":

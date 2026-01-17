@@ -13,22 +13,22 @@ LIVE_LIST: dict[str, dict] = JsonHelper.load_json("json/live.json")
 REACTIONS_LIST: dict[str, dict] = JsonHelper.load_json("json/reactions.json")
 REMINDER_LIST: dict[str, dict] = JsonHelper.load_json("json/reminders.json")
 ROLES_LIST: dict[str, dict] = JsonHelper.load_json("json/roles.json")
-STATUSES_LIST: dict[str, dict] = JsonHelper.load_json("json/statuses.json")
+STATUSES_LIST: list[str] = JsonHelper.load_json("json/statuses.json")
 
 GUILD_ID: int = int(CHANNELS_LIST[ENV]["server"])
 STREAM_CHANNEL: int = int(CHANNELS_LIST[ENV]["stream"]["main"])
 STREAM_OFF_THREAD: int = int(CHANNELS_LIST[ENV]["stream"]["thread"])
 
-SENTRY_SDN: str = os.getenv("SENTRY_SDN")
+SENTRY_SDN: str = os.getenv("SENTRY_SDN", "")
 
-TTV_TOKEN: str = os.getenv("TWITCH_TOKEN")
-TTV_ID: str = os.getenv("TWITCH_ID")
-TTV_TIMEOUT: int = int(os.getenv("TTV_TIMEOUT"))
+TTV_TOKEN: str = os.getenv("TWITCH_TOKEN", "")
+TTV_ID: str = os.getenv("TWITCH_ID", "")
+TTV_TIMEOUT: int = int(os.getenv("TTV_TIMEOUT", "5"))
 
-BOT: str = os.getenv("BOT_NAME")
+BOT: str = os.getenv("BOT_NAME", "DonkeyBot")
 
 DISCORD_KEY: str = (
-    os.getenv("DISCORD_PRIMARY_KEY")
+    os.getenv("DISCORD_PRIMARY_KEY", "")
     if os.getenv("DEBUG") == "False"
-    else os.getenv("DISCORD_BETA_KEY")
+    else os.getenv("DISCORD_BETA_KEY", "")
 )

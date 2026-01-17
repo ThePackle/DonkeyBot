@@ -6,18 +6,17 @@ from discord import Interaction, app_commands
 from discord.ext.commands import Cog, ExtensionError
 
 if TYPE_CHECKING:
-    from main import DonkeyBot
+    from donkeybot.main import DonkeyBot
 
 
-async def setup(bot: "DonkeyBot"):
-    await bot.add_cog(ErrorHandler(bot))
+async def setup(bot: "DonkeyBot") -> None:
     cog = ErrorHandler(bot)
+    await bot.add_cog(cog)
+    bot.tree.error(cog.on_app_command_error)
 
-    bot.tree.on_error = cog.on_app_command_error
 
-
-async def teardown(bot: "DonkeyBot"):
-    await bot.remove_cog(name="ErrorHandler")
+async def teardown(bot: "DonkeyBot") -> None:
+    await bot.remove_cog("ErrorHandler")
 
 
 class ErrorHandler(Cog, name="ErrorHandler", description="Manages DonkeyBot's errors"):

@@ -11,15 +11,15 @@ from donkeybot.helpers.config_helper import GUILD_ID, STATUSES_LIST
 from donkeybot.helpers.json_helper import JsonHelper
 
 if TYPE_CHECKING:
-    from main import DonkeyBot
+    from donkeybot.main import DonkeyBot
 
 
-async def setup(bot: "DonkeyBot"):
+async def setup(bot: "DonkeyBot") -> None:
     await bot.add_cog(ActivityCog(bot))
 
 
-async def teardown(bot: "DonkeyBot"):
-    await bot.remove_cog(name="GameActivites")
+async def teardown(bot: "DonkeyBot") -> None:
+    await bot.remove_cog("GameActivities")
 
 
 class ActivityCog(
@@ -27,7 +27,7 @@ class ActivityCog(
 ):
     def __init__(self, bot: "DonkeyBot") -> None:
         self.bot = bot
-        self.gameslist: list = STATUSES_LIST
+        self.gameslist: list[str] = STATUSES_LIST
 
     async def cog_load(self) -> None:
         self.bot.tree.add_command(
@@ -61,7 +61,8 @@ class ActivityCog(
         pfp = random.choice(os.listdir("pfps/"))
 
         with open(f"pfps/{pfp}", "rb") as image:
-            await self.bot.user.edit(avatar=image.read())
+            if self.bot.user is not None:
+                await self.bot.user.edit(avatar=image.read())
 
     @pfp_change.before_loop
     async def before_pfp_change(self) -> None:
@@ -69,7 +70,8 @@ class ActivityCog(
         pfp = random.choice(os.listdir("pfps/"))
 
         with open(f"pfps/{pfp}", "rb") as image:
-            await self.bot.user.edit(avatar=image.read())
+            if self.bot.user is not None:
+                await self.bot.user.edit(avatar=image.read())
 
     ###########################################################################
     # main_cmd_group Commands
@@ -135,11 +137,16 @@ class ActivityCog(
         self,
         interaction: Interaction,
         action: app_commands.Choice[str],
-        status: str | None,
-        force: bool | None,
+        status: str | None = None,
+        force: bool | None = None,
     ) -> None:
         """Adds, removes, or force changes statuses for donkeybot."""
         if action.value == "add":
+            if status is None:
+                await interaction.response.send_message(
+                    "Status is required for add action.", ephemeral=True
+                )
+                return
             status = status.replace('"', "")
 
             if len(status) > 75:
