@@ -45,16 +45,12 @@ class StreamingCog(
         self.live: dict[str, dict[str, Any]] = LIVE_LIST
 
     async def cog_load(self) -> None:
-        stream_ch = await self.bot.fetch_channel(STREAM_CHANNEL)
-        thread_ch = await self.bot.fetch_channel(STREAM_OFF_THREAD)
-
-        if not isinstance(stream_ch, discord.TextChannel):
-            raise RuntimeError("STREAM_CHANNEL is not a TextChannel")
-        if not isinstance(thread_ch, (discord.TextChannel, discord.Thread)):
-            raise RuntimeError("STREAM_OFF_THREAD is not a TextChannel or Thread")
-
-        self.stream_channel = stream_ch
-        self.stream_thread = thread_ch
+        channel = await self.bot.fetch_channel(STREAM_CHANNEL)
+        thread = await self.bot.fetch_channel(STREAM_OFF_THREAD)
+        if not isinstance(channel, TextChannel) or not isinstance(thread, TextChannel):
+            raise ValueError("Stream channels must be TextChannels")
+        self.stream_channel = channel
+        self.stream_thread = thread
         self.ttv_client = await Twitch(app_id=TTV_ID, app_secret=TTV_TOKEN)
 
         self.stream_loop.start()
@@ -72,8 +68,6 @@ class StreamingCog(
 
             if stream:
                 user = await first(self.ttv_client.get_users(logins="ThreeAlpaca"))
-                if user is None:
-                    return
                 try:
                     self.live[stream.user_name]
                 except (KeyError, TypeError):
@@ -109,8 +103,8 @@ class StreamingCog(
                         }
                     )
 
-            remove_stream: list[str] = []
-            for stream_user, messages in self.live.items():
+            remove_stream = []
+            for user, messages in self.live.items():
                 if stream is None:
                     if messages["check"] >= TTV_TIMEOUT:
                         archive = await first(
@@ -124,10 +118,10 @@ class StreamingCog(
 
                         await self.stream_thread.send(
                             embed=EmbedCreator.twitch_offline_embed(
-                                stream_name=stream_user,
+                                stream_name=user,
                                 stream_game=messages["game"],
                                 twitch_pfp=messages["pfp"],
-                                archive_video=archive.url if archive else None,
+                                archive_video=archive.url,
                             )
                         )
 
@@ -141,10 +135,10 @@ class StreamingCog(
                         await remove_embed.delete()
                         await remove_role.delete()
 
-                        remove_stream.append(stream_user)
+                        remove_stream.append(user)
                     else:
                         check = messages["check"] + 1
-                        self.live[stream_user].update({"check": check})
+                        self.live[user].update({"check": check})
                 else:
                     e_thumbnail = (
                         messages["thumbnail"] + "?rand=" + str(int(time.time()))
@@ -152,7 +146,7 @@ class StreamingCog(
 
                     embed = EmbedCreator.twitch_embed(
                         title=stream.title,
-                        stream_name=stream_user,
+                        stream_name=user,
                         stream_game=stream.game_name,
                         viewer_count=stream.viewer_count,
                         twitch_pfp=messages["pfp"],
@@ -167,12 +161,12 @@ class StreamingCog(
                         await embed_stream.edit(embed=embed)
                     except discord.errors.NotFound:
                         new_embed = await self.stream_channel.send(embed=embed)
-                        self.live[stream_user].update({"embed": new_embed.id})
+                        self.live[user].update({"embed": new_embed.id})
 
-                    self.live[stream_user].update({"check": 0})
+                    self.live[user].update({"check": 0})
 
-            for stream_user in remove_stream:
-                self.live.pop(stream_user, None)
+            for user in remove_stream:
+                self.live.pop(user, None)
 
             JsonHelper.save_json(self.live, "json/live.json")
         except Exception as error:
