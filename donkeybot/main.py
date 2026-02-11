@@ -13,7 +13,7 @@ from donkeybot.helpers.config_helper import (
     ENV,
     GUILD_ID,
     ROLES_LIST,
-    SENTRY_SDN,
+    SENTRY_SDK,
 )
 from donkeybot.helpers.embed_helper import EmbedCreator
 from donkeybot.helpers.setup_json import setup_json
@@ -44,7 +44,7 @@ class DonkeyBot(commands.Bot):
 
         if ENV == "primary":
             sentry_sdk.init(
-                dsn=SENTRY_SDN,
+                dsn=SENTRY_SDK,
                 send_default_pii=True,
                 traces_sample_rate=1.0,
             )

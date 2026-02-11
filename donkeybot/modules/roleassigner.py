@@ -114,7 +114,7 @@ class RoleCog(Cog, name="Roles", description="Manages DonkeyBot's reaction messa
                         for emoji_find, role_id in self.reactions_list[message][
                             "reactions"
                         ].items():
-                            if role_id == role.id:
+                            if role_id == role.id and found_emoji:
                                 found_emoji = emoji_find
                                 await message_obj.clear_reaction(found_emoji)
                                 break

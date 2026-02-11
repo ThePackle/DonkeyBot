@@ -16,7 +16,7 @@ class EmbedCreator:
         stream_name: str,
         stream_game: str,
         viewer_count: int,
-        twitch_pfp: str,
+        twitch_pfp: str | None,
         thumbnail: str,
     ) -> Embed:
         """This embed is used to display currently online livestreams."""

@@ -1,5 +1,7 @@
 import time
-from typing import TYPE_CHECKING
+from datetime import datetime
+from typing import TYPE_CHECKING, TypedDict, cast
+from zoneinfo import ZoneInfo
 
 import discord
 import sentry_sdk
@@ -14,6 +16,8 @@ from donkeybot.helpers.config_helper import (
     STREAM_CHANNEL,
     STREAM_OFF_THREAD,
     TTV_ID,
+    TTV_SCHEDULE_END,
+    TTV_SCHEDULE_START,
     TTV_TIMEOUT,
     TTV_TOKEN,
 )
@@ -24,12 +28,22 @@ if TYPE_CHECKING:
     from donkeybot.main import DonkeyBot
 
 
+class LiveStream(TypedDict):
+    user_id: str
+    embed: int
+    role: int
+    game: str
+    thumbnail: str
+    pfp: str | None
+    check: int
+
+
 async def setup(bot: "DonkeyBot"):
     await bot.add_cog(StreamingCog(bot))
 
 
 async def teardown(bot: "DonkeyBot"):
-    await bot.remove_cog(name="Streaming")
+    await bot.remove_cog("Streaming")
 
 
 class StreamingCog(
@@ -38,11 +52,19 @@ class StreamingCog(
     def __init__(self, bot: "DonkeyBot") -> None:
         self.bot = bot
         self.stream_role: int = int(self.bot.roles["admin"]["stream"])
-        self.live: dict[dict, str] = LIVE_LIST
+        self.live: dict[str, LiveStream] = cast(dict[str, LiveStream], LIVE_LIST)
+        self.stream_channel: discord.TextChannel
+        self.stream_thread: discord.TextChannel
 
     async def cog_load(self) -> None:
-        self.stream_channel = await self.bot.fetch_channel(STREAM_CHANNEL)
-        self.stream_thread = await self.bot.fetch_channel(STREAM_OFF_THREAD)
+        self.stream_channel = cast(
+            discord.TextChannel,
+            await self.bot.fetch_channel(STREAM_CHANNEL),
+        )
+        self.stream_thread = cast(
+            discord.TextChannel,
+            await self.bot.fetch_channel(STREAM_OFF_THREAD),
+        )
         self.ttv_client = await Twitch(app_id=TTV_ID, app_secret=TTV_TOKEN)
 
         self.stream_loop.start()
@@ -52,48 +74,69 @@ class StreamingCog(
 
         self.stream_loop.cancel()
 
+    def _in_schedule(
+        self,
+    ) -> bool:
+        eastern_hour = datetime.now(ZoneInfo("America/New_York")).hour
+        return TTV_SCHEDULE_START <= eastern_hour < TTV_SCHEDULE_END
+
     @tasks.loop(minutes=1)
     async def stream_loop(self) -> None:
-        """Checks livestream status of players every minute."""
+        if not self._in_schedule() and not self.live:
+            return
+
         try:
-            stream = await first(self.ttv_client.get_streams(user_login="ThreeAlpaca"))
+            stream = await first(
+                self.ttv_client.get_streams(user_login=["ThreeAlpaca"])
+            )
 
             if stream:
-                user = await first(self.ttv_client.get_users(logins="ThreeAlpaca"))
+                user = await first(self.ttv_client.get_users(logins=["ThreeAlpaca"]))
                 try:
                     self.live[stream.user_name]
                 except (KeyError, TypeError):
-                    thumbnail = stream.thumbnail_url.replace("{width}", "1280").replace(
-                        "{height}", "720"
-                    )
+                    if user:
+                        thumbnail = stream.thumbnail_url.replace(
+                            "{width}", "1280"
+                        ).replace("{height}", "720")
 
-                    e_thumbnail = thumbnail + "?rand=" + str(int(time.time()))
+                        e_thumbnail = thumbnail + "?rand=" + str(int(time.time()))
 
-                    embed_stream = await self.stream_channel.send(
-                        embed=EmbedCreator.twitch_embed(
-                            title=stream.title,
-                            stream_name=stream.user_name,
-                            stream_game=stream.game_name,
-                            viewer_count=stream.viewer_count,
-                            twitch_pfp=user.profile_image_url,
-                            thumbnail=e_thumbnail,
+                        embed_stream = await self.stream_channel.send(
+                            embed=EmbedCreator.twitch_embed(
+                                title=stream.title,
+                                stream_name=stream.user_name,
+                                stream_game=stream.game_name,
+                                viewer_count=stream.viewer_count,
+                                twitch_pfp=(
+                                    user.profile_image_url
+                                    if user and user.profile_image_url
+                                    else None
+                                ),
+                                thumbnail=e_thumbnail,
+                            )
                         )
-                    )
-                    role_msg = await self.stream_channel.send(f"<@&{self.stream_role}>")
+                        role_msg = await self.stream_channel.send(
+                            f"<@&{self.stream_role}>"
+                        )
 
-                    self.live.update(
-                        {
-                            f"{stream.user_name}": {
-                                "user_id": user.id,
-                                "embed": embed_stream.id,
-                                "role": role_msg.id,
-                                "game": stream.game_name,
-                                "thumbnail": thumbnail,
-                                "pfp": user.profile_image_url,
-                                "check": 0,
+                        self.live.update(
+                            {
+                                f"{stream.user_name}": {
+                                    "user_id": user.id,
+                                    "embed": embed_stream.id,
+                                    "role": role_msg.id,
+                                    "game": stream.game_name,
+                                    "thumbnail": thumbnail,
+                                    "pfp": (
+                                        user.profile_image_url
+                                        if user and user.profile_image_url
+                                        else None
+                                    ),
+                                    "check": 0,
+                                }
                             }
-                        }
-                    )
+                        )
 
             remove_stream = []
             for user, messages in self.live.items():
@@ -108,14 +151,15 @@ class StreamingCog(
                             )
                         )
 
-                        await self.stream_thread.send(
-                            embed=EmbedCreator.twitch_offline_embed(
-                                stream_name=user,
-                                stream_game=messages["game"],
-                                twitch_pfp=messages["pfp"],
-                                archive_video=archive.url,
+                        if archive:
+                            await self.stream_thread.send(
+                                embed=EmbedCreator.twitch_offline_embed(
+                                    stream_name=user,
+                                    stream_game=messages["game"],
+                                    twitch_pfp=messages["pfp"],
+                                    archive_video=archive.url,
+                                )
                             )
-                        )
 
                         remove_embed = await self.stream_channel.fetch_message(
                             messages["embed"]
