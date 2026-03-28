@@ -1,8 +1,8 @@
 volumes:
-    dblogs:
-      name: donkeybot_logs
-    dbjson:
-      name: donkeybot_json
+  donkeybot_logs:
+  donkeybot_json:
+  anabot_logs:
+  anabot_json:
 
 services:
   donkeybot:
@@ -12,14 +12,44 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     env_file:
-      - .env
+      - .env.donkeybot
+    volumes:
+      - donkeybot_logs:/app/logs:rw
+      - donkeybot_json:/app/json:rw
+    networks:
+      - botnet
+
+  anabot:
+    container_name: anabot
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env.anabot
+    volumes:
+      - anabot_logs:/app/logs:rw
+      - anabot_json:/app/json:rw
+    networks:
+      - botnet
+
+  dev:
+    container_name: dev
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: "no"
+    env_file:
+      - .env.donkeybot
     volumes:
       - .:/app:rw
-      - dblogs:/app/logs:rw
-      - dbjson:/app/json:rw
+      - donkeybot_logs:/app/logs:rw
+      - donkeybot_json:/app/json:rw
     networks:
-      - donkeybot
+      - botnet
+    profiles:
+      - dev
 
 networks:
-  donkeybot:
+  botnet:
     driver: bridge

@@ -1,21 +1,34 @@
 # syntax=docker/dockerfile:1
-FROM python:3.14.3-bookworm
+
+FROM python:3.14.3-alpine AS builder
+
+RUN apk add --no-cache \
+  gcc musl-dev postgresql-dev \
+  zlib-dev jpeg-dev freetype-dev libwebp-dev
+
+COPY requirements.txt /tmp/requirements.txt
+RUN pip install --no-cache-dir --prefix=/install -r /tmp/requirements.txt
+
+FROM python:3.14.3-alpine
 
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 
-RUN apt-get update \
-  && apt-get install -y --no-install-recommends  build-essential libpq-dev \
-  && rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache libpq zlib jpeg freetype libwebp su-exec
 
-COPY requirements.txt /tmp/requirements.txt
-RUN pip install --no-cache-dir -r /tmp/requirements.txt
+COPY --from=builder /install /usr/local
 
-RUN useradd -U app_user && install -d -m 0755 -o app_user -g app_user /app
+ARG APP_UID=1000
+ARG APP_GID=1000
+RUN addgroup -g ${APP_GID} app_user \
+  && adduser -u ${APP_UID} -G app_user -D app_user \
+  && install -d -m 0755 -o app_user -g app_user /app /app/json /app/logs
 
 WORKDIR /app
-USER app_user:app_user
 
 COPY --chown=app_user:app_user . .
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
-CMD [ "python3", "-m", "donkeybot.main" ]
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["python3", "-m", "donkeybot.main"]
