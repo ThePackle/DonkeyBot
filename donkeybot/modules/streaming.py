@@ -15,6 +15,7 @@ from donkeybot.helpers.config_helper import (
     LIVE_LIST,
     STREAM_CHANNEL,
     STREAM_OFF_THREAD,
+    STREAMER,
     TTV_ID,
     TTV_SCHEDULE_END,
     TTV_SCHEDULE_START,
@@ -86,12 +87,10 @@ class StreamingCog(
             return
 
         try:
-            stream = await first(
-                self.ttv_client.get_streams(user_login=["ThreeAlpaca"])
-            )
+            stream = await first(self.ttv_client.get_streams(user_login=[STREAMER]))
 
             if stream:
-                user = await first(self.ttv_client.get_users(logins=["ThreeAlpaca"]))
+                user = await first(self.ttv_client.get_users(logins=[STREAMER]))
                 try:
                     self.live[stream.user_name]
                 except (KeyError, TypeError):

@@ -29,6 +29,8 @@ TTV_SCHEDULE_END: int = int(os.getenv("TTV_SCHEDULE_END", "21"))
 
 BOT: str = os.getenv("BOT_NAME", "DonkeyBot")
 
+STREAMER: str = os.getenv("STREAMER", "ThreeAlpaca")
+
 DISCORD_KEY: str = (
     os.getenv("DISCORD_PRIMARY_KEY", "")
     if os.getenv("DEBUG") == "False"
