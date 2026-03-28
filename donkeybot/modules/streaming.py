@@ -88,6 +88,7 @@ class StreamingCog(
 
         try:
             stream = await first(self.ttv_client.get_streams(user_login=[STREAMER]))
+            self.bot._log.info(f"Stream check for '{STREAMER}': {stream}")
 
             if stream:
                 user = await first(self.ttv_client.get_users(logins=[STREAMER]))
