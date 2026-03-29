@@ -17,6 +17,7 @@ from donkeybot.helpers.config_helper import (
     STREAM_OFF_THREAD,
     STREAMER,
     TTV_ID,
+    TTV_SCHEDULE_ENABLED,
     TTV_SCHEDULE_END,
     TTV_SCHEDULE_START,
     TTV_TIMEOUT,
@@ -78,6 +79,8 @@ class StreamingCog(
     def _in_schedule(
         self,
     ) -> bool:
+        if not TTV_SCHEDULE_ENABLED:
+            return True
         eastern_hour = datetime.now(ZoneInfo("America/New_York")).hour
         return TTV_SCHEDULE_START <= eastern_hour < TTV_SCHEDULE_END
 

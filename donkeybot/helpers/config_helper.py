@@ -24,6 +24,7 @@ SENTRY_SDK: str = os.getenv("SENTRY_SDK", "")
 TTV_TOKEN: str = os.getenv("TWITCH_TOKEN", "")
 TTV_ID: str = os.getenv("TWITCH_ID", "")
 TTV_TIMEOUT: int = int(os.getenv("TTV_TIMEOUT", "5"))
+TTV_SCHEDULE_ENABLED: bool = os.getenv("TTV_SCHEDULE_ENABLED", "True").lower() == "true"
 TTV_SCHEDULE_START: int = int(os.getenv("TTV_SCHEDULE_START", "13"))
 TTV_SCHEDULE_END: int = int(os.getenv("TTV_SCHEDULE_END", "21"))
 
